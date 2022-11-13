@@ -14,7 +14,7 @@ where $x$, $y$ are the correct value and the computed value when using a roundin
 - `gen_posit_values(Nbits, es, log_range, eps)`: generate real numbers for posit format
 - `gen_fp_values(Nbits, ebits, log_range, eps)`: generate real numbers for floating-point format
 
-where $Nbits$ refers to the total bit-width of the data format, and $es$, $ebits$ represent the exponent size of posit and floating-point format, respectively. $log\_range$ and $eps$ limit the dynamic range of the output depending on our needs.
+where $Nbits$ refers to the total bit-width of the data format, and $es$, $ebits$ represent the exponent size of posit and floating-point format, respectively. $log\_{range}$ and $eps$ limit the dynamic range of the output depending on our needs.
 
 `gen_sample_points.py`: generate sample points between the real numbers and calculate their decimal accuracy. It includes the following subfunctions:
 - `cal_dec_accuracy(x_pair)`: calculate the decimal accuracy of input pairs
