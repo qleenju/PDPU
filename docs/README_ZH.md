@@ -7,3 +7,5 @@
 PDPU在低精度格式下执行向量 $V_a$ 和 $V_b$ 的点积运算
 
 #### 架构
+
+![PDPU的实现架构](figs/architecture.png)
