@@ -1,6 +1,8 @@
 # PDPU
 **An Open-Source Posit Dot-Product Unit (PDPU) for Deep Learning Applications**
 
+English | [简体中文](https://github.com/qleenju/PDPU/blob/main/docs/README_ZH.md)
+
 ## Overview
 The proposed PDPU performs a dot-product of two input vectors $V_a$ and $V_b$ in low-precision format, and then accumulates the dot-product result and previous output $acc$ to a high-precision value $out$ as shown below:
 $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-1}$$
