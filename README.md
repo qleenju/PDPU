@@ -27,7 +27,7 @@ $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-
 The PDPU is implemented using SystemVerilog, capable of performing efficient posit-based dot-product operations in deep neural networks.
 
 ```
-posit_dpu_acc_v2.sv                   # 顶层模块，参数化的Posit混合精度点积运算
+pdpu_top.sv                   # 顶层模块，参数化的Posit混合精度点积运算
 ├── posit_pkg.sv                      # package包，封装常用的函数、变量等
 ├── posit_decoder_v2.sv               # posit译码模块
 │   ├── posit_pkg.sv
