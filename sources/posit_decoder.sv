@@ -1,82 +1,93 @@
-//Author: Qiong Li
-//Date: 2022-03-01
-//功能：Posit译码器，提取输入数据的Regime/Exponent/Mantissa值
-
 module posit_decoder #(
-    parameter int unsigned n = 16,
-    parameter int unsigned es = 1,
-    //don't change
-    parameter int unsigned LZC_WIDTH = posit_pkg::clog2(n-1),
-    parameter int unsigned MANT_WIDTH = n-es-3     //not include "hidden bit"
+    parameter int unsigned n = 16,  // word size
+    parameter int unsigned es = 1,  // exponent size
+    //do not change
+    parameter int unsigned nd = posit_pkg::clog2(n-1),
+    parameter int unsigned EXP_WIDTH = nd+es,       // not include sign bit
+    parameter int unsigned MANT_WIDTH = n-es-3      // not include implicit bit
 )(
     input logic [n-1:0] operand_i,
     output logic sign_o,
-    output logic signed [LZC_WIDTH:0] k_sgn_o,
-    output logic [es:0] exp_o,
+    output logic signed [EXP_WIDTH:0] rg_exp_o,  
     output logic [MANT_WIDTH:0] mant_norm_o
 );
-    //---------------
-    //special cases (not include NaR(100...000))
-    //---------------
-    logic input_is_zero;
-    assign input_is_zero = ~(|operand_i);
 
-    //---------------
-    //two's complementation if negative
-    //---------------
+    // ---------------
+    // Perform two's complement if negative
+    // ---------------
     logic sign;
     logic [n-2:0] operand_value;
+
     assign sign = operand_i[n-1];
     assign operand_value = sign ? (~operand_i[n-2:0]+1) : operand_i[n-2:0];
     
-    //---------------
-    //Leading Zero Count
-    //---------------
+    // ---------------
+    // Leading Zero Count
+    // ---------------
     logic regS;
-    logic [n-2:0] sum_lower;
-    logic [LZC_WIDTH-1:0] leading_zero_count;
+    logic [n-2:0] lzc_operand;
+    logic [nd-1:0] leading_zero_count;
+    // lzc_zeroes = 1 if input is all 0s
     logic lzc_zeroes;
 
     assign regS = operand_value[n-2];
-    assign sum_lower = regS ? (~operand_value) : operand_value;
+    assign lzc_operand = regS ? (~operand_value) : operand_value;
 
     lzc #(
         .WIDTH(n-1),
-        .MODE(1)    //mode=1 means "counting leading zeroes"
+        .MODE(1'b1)    // mode=1 means "counting leading zeroes"
     ) u_lzc(
-        .in_i(sum_lower),
+        .in_i(lzc_operand),
         .cnt_o(leading_zero_count),
         .empty_o(lzc_zeroes)
     );
 
-    logic [LZC_WIDTH-1:0] runlength;
-    assign runlength = lzc_zeroes ? n-1 : leading_zero_count;   //lzc模块针对非2幂次的全0存在BUG
+    logic [nd-1:0] runlength;       // number of consecutive identical bits in regime field
+    logic [nd-1:0] regime_bits;     // bitwidth of regime field
+    logic signed [nd:0] regime_k;   // value represented by regime field
 
-    //---------------
-    //Extract Sign/Regime/Exponent/Mantissa
-    //---------------
-    //移除Regime部分
-    logic [LZC_WIDTH-1:0] shift_amount;
-    logic [n-2:0] shift_result;
-    logic [MANT_WIDTH+es-1:0] exp_mant; //(n-es-3+es)=n-3
-    
-    assign shift_amount = runlength-1;
+    assign runlength = lzc_zeroes ? (n-1) : leading_zero_count;
+    assign regime_bits = lzc_zeroes ? (n-1) : (leading_zero_count+1);
+    assign regime_k = regS ? ({1'b0,runlength-1}) : ({1'b1,~runlength+1});
+
+    // ---------------
+    // Left shift regime field
+    // ---------------
+    logic [n-2:0] op_no_rg;
+
     barrel_shifter #(
         .WIDTH(n-1),
-        .SHIFT_WIDTH(LZC_WIDTH),
+        .SHIFT_WIDTH(nd),
         .MODE(1'b0)
     ) u_barrel_shifter(
         .operand_i(operand_value),
-        .shift_amount(shift_amount),
-        .result_o(shift_result)
+        .shift_amount(regime_bits),
+        .result_o(op_no_rg)
     );
-    assign exp_mant = shift_result[MANT_WIDTH+es-1:0];
 
-    //---------------
-    //Output
-    //---------------
+    // ---------------
+    // Extract sign
+    // ---------------
     assign sign_o = sign;
-    assign k_sgn_o = regS ? ({1'b0,runlength-1}) : ({1'b1,~runlength+1});
-    assign exp_o = exp_mant >> MANT_WIDTH;
-    assign mant_norm_o = (input_is_zero) ? '0 : {1'b1,exp_mant[MANT_WIDTH-1:0]};
+
+    // ---------------
+    // Extract valid exponent
+    // ---------------
+    logic [es:0] exp;
+    if(es==0) begin
+        assign exp = 0;
+    end
+    else begin
+        assign exp = op_no_rg[n-2:n-2-es+1];
+    end
+    
+    assign rg_exp_o = regime_k << es | exp;
+
+    // ---------------
+    // Extract mantissa
+    // ---------------
+    logic implicit_bit;
+    
+    assign implicit_bit = |operand_i[n-2:0];
+    assign mant_norm_o = {implicit_bit, op_no_rg[n-2-es:2]};
 endmodule
