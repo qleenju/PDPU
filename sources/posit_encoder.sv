@@ -1,97 +1,130 @@
 //Author: Qiong Li
-//Date: 2022-03-02
-//功能：根据结果的sign/k_sgn/exp/mant值重新编码为格式为(n, es)的posit数据
+//Date: 2022-09-24
+//Intro: 在posit_encoder.sv的基础上优化
 
-module posit_encoder #(
+module posit_encoder_v2 #(
     parameter int unsigned n = 16,
     parameter int unsigned es = 1,
-    parameter int unsigned MANT_WIDTH = n-es-3,
-    parameter int unsigned K_WIDTH = posit_pkg::clog2(n-1)
+    parameter int unsigned nd = posit_pkg::clog2(n-1),
+    parameter int unsigned EXP_WIDTH = nd+es,       // not include sign bit
+    parameter int unsigned MANT_WIDTH = n-es-3      // not include implicit bit
 ) (
     input logic sign_i,
-    input logic signed [K_WIDTH:0] k_sgn_i,
-    input logic [es:0] exp_i,
-    input logic [MANT_WIDTH:0] mant_norm_i,    //include "hidden bit"
+    input logic signed [EXP_WIDTH:0] rg_exp_i,
+    input logic [MANT_WIDTH:0] mant_norm_i,
 
     output logic [n-1:0] result_o
 );
-    //special case
-    logic input_is_zero;
-    assign input_is_zero = ~mant_norm_i[MANT_WIDTH];
+    // ---------------
+    // Input is zero
+    // ---------------
+    logic input_not_zero;
+    assign input_not_zero = mant_norm_i[MANT_WIDTH];
 
-    //remove hidden bit
-    logic [MANT_WIDTH-1:0] mantissa;
-    assign mantissa = mant_norm_i[MANT_WIDTH-1:0];
+    // ---------------
+    // Compute regime_k and exp
+    // ---------------
+    logic signed [EXP_WIDTH-es:0] regime_k;
+    logic signed [es:0] exp;
 
-    //determine regime
+    assign regime_k = rg_exp_i[EXP_WIDTH:es];
+    if(es==0) begin
+        assign exp = 0;
+    end
+    else begin
+        assign exp = rg_exp_i[es-1:0];
+    end
+    
+
+    // ---------------
+    // initial regime field
+    // ---------------
     logic sign_k;
-    logic [K_WIDTH:0] regime_bits;
-    logic [n-2:0] regime,regime_temp;
+    logic [n-2:0] rg_const;
+    logic [n-2:0] regime;
+    
+    assign sign_k = rg_exp_i[EXP_WIDTH];
+    assign rg_const = 1;
+    assign regime = sign_k ? rg_const : ~rg_const;
 
-    assign sign_k = k_sgn_i[K_WIDTH];
-    assign regime_bits = sign_k ? (-k_sgn_i+1) : (k_sgn_i+2);
-    assign regime_temp = 1;
-    assign regime = sign_k ? regime_temp : ~regime_temp; 
 
-    //consider overflow of regime
-    logic value_is_special;
-    logic [n-2:0] special_value;
-    logic [K_WIDTH:0] regime_bits_new;
-    always_comb begin
-        if(regime_bits>n-1) begin
-            value_is_special = 1'b1;
-            special_value = sign_k ? 1 : '1;
-            regime_bits_new = n-1;
-        end
-        else begin
-            value_is_special = 1'b0;
-            special_value = '0;
-            regime_bits_new = regime_bits;
-        end
+    // ---------------
+    // Compute regime bits
+    // ---------------
+    logic [EXP_WIDTH-es:0] regime_bits;
+    
+    assign regime_bits = sign_k ? (~regime_k+2) : (regime_k+2);
+    
+
+    // ---------------
+    // Combine {regime, Exp, Mantissa}
+    // ---------------
+    localparam int unsigned REM_WIDTH = (n-1)+es+MANT_WIDTH;
+    logic [REM_WIDTH-1:0] rg_exp_mant;
+
+    if(es==0) begin
+        assign rg_exp_mant = {regime, mant_norm_i[MANT_WIDTH-1:0]};
+    end
+    else begin
+        assign rg_exp_mant = {regime, exp[es-1:0], mant_norm_i[MANT_WIDTH-1:0]}; 
     end
 
-    //Regime-Exp-Mantissa
-    localparam int unsigned REM_WIDTH = (n-1) + es + MANT_WIDTH;
-    localparam int unsigned LZC_WIDTH = posit_pkg::clog2(n-1);
-    localparam int unsigned ROUND_WIDTH = REM_WIDTH - (n-1);    //舍入的位宽
+
+    // ---------------
+    // Consider amount of right shift
+    // ---------------
+    localparam int unsigned MAX_SHIFT_AMOUNT = MANT_WIDTH + es + 1;
+    localparam int unsigned SHIFT_WIDTH = posit_pkg::clog2(MAX_SHIFT_AMOUNT+1);
+    logic [SHIFT_WIDTH-1:0] shift_amount;
     
-    logic [n-2+es:0] regime_exp;
-    assign regime_exp = (regime<<es) | exp_i;
+    assign shift_amount = (regime_bits>=n) ? MAX_SHIFT_AMOUNT : (regime_bits+(MANT_WIDTH+es-n+1));
 
-    logic [REM_WIDTH-1:0] rem,rem_shifted;
-    assign rem = {regime_exp, mantissa};
 
-    logic [LZC_WIDTH-1:0] shift_amount;
-    assign shift_amount = n - 1 - regime_bits_new;
+    // ---------------
+    // Right Shift
+    // ---------------
+    logic [REM_WIDTH+MAX_SHIFT_AMOUNT-1:0] value_before_shift, value_after_shift;
+    
+    assign value_before_shift = rg_exp_mant << MAX_SHIFT_AMOUNT;
     barrel_shifter #(
-        .WIDTH(REM_WIDTH),
-        .SHIFT_WIDTH(LZC_WIDTH),
-        .MODE(1'b0)
+        .WIDTH(REM_WIDTH+MAX_SHIFT_AMOUNT),
+        .SHIFT_WIDTH(SHIFT_WIDTH),
+        .MODE(1'b1)
     ) u_barrel_shifter(
-        .operand_i(rem),
+        .operand_i(value_before_shift),
         .shift_amount(shift_amount),
-        .result_o(rem_shifted)
+        .result_o(value_after_shift)
     );
 
-    //Absolute Value
-    logic [n-2:0] abs_value;
-    assign abs_value = rem_shifted[REM_WIDTH-1:ROUND_WIDTH];
-    
-    //rounding
-    logic [ROUND_WIDTH-1:0] overflow;
-    logic bitsNPlusOne,bitsMore,round_value;
 
-    assign overflow = rem_shifted[ROUND_WIDTH-1:0];
-    assign bitsNPlusOne = overflow[ROUND_WIDTH-1];
-    assign bitsMore = |overflow[ROUND_WIDTH-2:0];
-    assign round_value = (bitsNPlusOne & bitsMore) | (bitsNPlusOne & abs_value[0]);
-    
-    //if regime overflow
-    logic [n-2:0] abs_value_new;
-    assign abs_value_new = value_is_special ? special_value : (abs_value+round_value);
+    // ---------------
+    // Compute abs_value and rounding_bits
+    // ---------------
+    logic [n-2:0] value_before_round;
+    logic [MAX_SHIFT_AMOUNT-1:0] rounding_bits;
 
-    //two's complement
+    assign {value_before_round,rounding_bits} = value_after_shift[MAX_SHIFT_AMOUNT+n-2:0];
+
+
+    // ---------------
+    // Perform rounding (RNE mode is applied by default)
+    // ---------------
+    logic round_bit;
+    logic sticky_bit;
+    logic round_value;
+    logic [n-2:0] value_after_round;
+
+    assign round_bit = rounding_bits[MAX_SHIFT_AMOUNT-1];
+    assign sticky_bit = |rounding_bits[MAX_SHIFT_AMOUNT-2:0];
+    assign round_value = round_bit & (sticky_bit | value_before_round[0]);
+    assign value_after_round = value_before_round + round_value;
+
+
+    // ---------------
+    // Output result
+    // ---------------
     logic [n-1:0] normal_result;
-    assign normal_result = sign_i ? {sign_i,~abs_value_new+1} : {sign_i,abs_value_new};
-    assign result_o = input_is_zero ? '0 : normal_result;
+    assign normal_result = sign_i ? {1'b1,~value_after_round+1} : {1'b0,value_after_round};
+    assign result_o = input_not_zero ? normal_result : '0;
+
 endmodule

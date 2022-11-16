@@ -36,20 +36,20 @@ module pdpu_top #(
     generate
         genvar i;
         for(i=0;i<N;i++) begin: posit_decoding
-            pdpu_posit_decoder #(
+            posit_decoder #(
                 .n(n_i),
                 .es(es_i)
-            )ua_pdpu_posit_decoder(
+            )ua_posit_decoder(
                 .operand_i(operands_a[i]),
                 .sign_o(signs_a[i]),
                 .rg_exp_o(rg_exp_a[i]),
                 .mant_norm_o(mants_norm_a[i])
             );
 
-            pdpu_posit_decoder #(
+            posit_decoder #(
                 .n(n_i),
                 .es(es_i)
-            )ub_pdpu_posit_decoder(
+            )ub_posit_decoder(
                 .operand_i(operands_b[i]),
                 .sign_o(signs_b[i]),
                 .rg_exp_o(rg_exp_b[i]),
@@ -67,10 +67,10 @@ module pdpu_top #(
     logic signed [EXP_WIDTH_O:0] rg_exp_acc;
     logic [MANT_WIDTH_O:0] mant_norm_acc;
     
-    pdpu_posit_decoder #(
+    posit_decoder #(
         .n(n_o),
         .es(es_o)
-    )uc_pdpu_posit_decoder(
+    )uc_posit_decoder(
         .operand_i(acc),
         .sign_o(sign_acc),
         .rg_exp_o(rg_exp_acc),
