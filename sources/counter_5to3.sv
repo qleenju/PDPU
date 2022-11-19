@@ -1,8 +1,5 @@
-//Author: Qiong Li
-//Date: 2022-03-26
-//功能：5:3计数器，构成4:2CSA的基本单元
-
-module counter5to3(
+// 5:3 counter, the basic module that constitutes the 4:2 compressor
+module counter_5to3(
     input logic x1,x2,x3,x4,cin,
     output logic sum,carry,cout
 );

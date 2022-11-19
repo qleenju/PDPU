@@ -1,11 +1,8 @@
-//Author: Qiong Li
-//Date: 2022-03-26
-//功能：全加器，作为3:2 CSA的基本单元
-
+// full adder, the basic module that constitutes the 3:2 compressor
 module fulladder(
     input logic x,y,z,
-    output logic s,c
+    output logic sum,carry
 );
-    assign s = (x ^ y ) ^ z;
-    assign c = ((x ^ y) & z) | (x & y);
+    assign sum = (x ^ y ) ^ z;
+    assign carry = ((x ^ y) & z) | (x & y);
 endmodule

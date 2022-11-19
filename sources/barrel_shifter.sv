@@ -1,3 +1,4 @@
+// barrel shifter
 module barrel_shifter #(
     parameter int unsigned WIDTH = 8,               // bit-width of input data
     parameter int unsigned SHIFT_WIDTH = 3,         // bit-width of shift amount

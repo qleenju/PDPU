@@ -9,7 +9,7 @@ module radix4_booth_multiplier #(
     output logic [WIDTH_O-1:0] sum_o,
     output logic [WIDTH_O-1:0] carry_o
 );
-    // number of partial products generated in unsigne multiplication
+    // number of partial products generated in unsigned multiplication
     localparam int unsigned COUNT = (WIDTH_B+2)/2;
     
     // ---------------

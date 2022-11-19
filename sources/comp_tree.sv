@@ -1,4 +1,4 @@
-// Recursive implementation of comparator tree, to obtain the maximum value among inputs
+// Recursive implementation of comparator tree, to obtain the maximum value among inputs with any size
 module comp_tree #(
     parameter N = 4,        // size of inputs
     parameter WIDTH = 8     // bit-width of inputs
@@ -34,7 +34,7 @@ module comp_tree #(
             assign operands_i_A = operands_i[N_A-1:0];
             assign operands_i_B = operands_i[N-1:N_A];
 
-            // for operands_i_A
+            // Module recursion for operands_i_A
             comp_tree #(
                 .N(N_A),
                 .WIDTH(WIDTH)
@@ -43,7 +43,7 @@ module comp_tree #(
                 .result_o(result_o_A)
             );
 
-            // for operands_i_B
+            // Module recursion for operands_i_B
             comp_tree #(
                 .N(N_B),
                 .WIDTH(WIDTH)
