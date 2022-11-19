@@ -1,3 +1,4 @@
+// Modified radix-4 booth wallace multiplier
 module radix4_booth_multiplier #(
     parameter int unsigned WIDTH_A = 16,                // bit-width of operand A
     parameter int unsigned WIDTH_B = 16,                // bit-width of operand B
@@ -9,7 +10,7 @@ module radix4_booth_multiplier #(
     output logic [WIDTH_O-1:0] sum_o,
     output logic [WIDTH_O-1:0] carry_o
 );
-    // number of partial products generated in unsigned multiplication
+    // count of partial products generated in unsigned multiplication
     localparam int unsigned COUNT = (WIDTH_B+2)/2;
     
     // ---------------

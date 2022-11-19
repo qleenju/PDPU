@@ -1,8 +1,9 @@
+// Posit decoder
 module posit_decoder #(
     parameter int unsigned n = 16,  // word size
     parameter int unsigned es = 1,  // exponent size
     //do not change
-    parameter int unsigned nd = posit_pkg::clog2(n-1),
+    parameter int unsigned nd = pdpu_pkg::clog2(n-1),
     parameter int unsigned EXP_WIDTH = nd+es,       // not include sign bit
     parameter int unsigned MANT_WIDTH = n-es-3      // not include implicit bit
 )(
@@ -27,8 +28,7 @@ module posit_decoder #(
     logic regS;
     logic [n-2:0] lzc_operand;
     logic [nd-1:0] leading_zero_count;
-    // lzc_zeroes = 1 if input is all 0s
-    logic lzc_zeroes;
+    logic lzc_zeroes;       // lzc_zeroes = 1 if input is all 0s
 
     assign regS = operand_value[n-2];
     assign lzc_operand = regS ? (~operand_value) : operand_value;

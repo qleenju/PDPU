@@ -1,11 +1,8 @@
-//Author: Qiong Li
-//Date: 2022-04-08
-//功能：产生部分积（应用改进radix-4的符号位扩展优化方法）
-
+// Generate partial product according to radix-4 booth encoding result
 module gen_product #(
-    parameter int unsigned WIDTH = 16    //Bitwidth of the multiplicand
+    parameter int unsigned WIDTH = 16
 )(
-    input logic [WIDTH-1:0] multiplicand_i,
+    input logic [WIDTH-1:0] multiplicand,
     input logic [2:0] code,
     output logic [WIDTH:0] partial_prod,
     output sign
@@ -19,19 +16,18 @@ module gen_product #(
         .two(two)
     );
 
-    logic [WIDTH:0] prod_pre;
+    logic [WIDTH:0] temp_prod;
     always_comb begin
         if(one) begin
-            prod_pre = multiplicand_i;
+            temp_prod = multiplicand;
         end
         else if(two) begin
-            prod_pre = multiplicand_i << 1;
+            temp_prod = multiplicand << 1;
         end
         else begin
-            prod_pre = '0;
+            temp_prod = '0;
         end
     end
-    //减少的主要是符号位扩展的工作，取反依旧需要进行
-    assign partial_prod = neg ? (~prod_pre) : prod_pre;
+    assign partial_prod = neg ? (~temp_prod) : temp_prod;
     assign sign = neg;
 endmodule

@@ -3,7 +3,7 @@ module gen_prods #(
     parameter int unsigned WIDTH_A = 16,
     parameter int unsigned WIDTH_B = 16,
     // do not change
-    parameter int unsigned COUNT = (WIDTH_B+2)/2,       // number of partial products generated in unsigned multiplication
+    parameter int unsigned COUNT = (WIDTH_B+2)/2,       // count of partial products generated in unsigned multiplication
     parameter int unsigned WIDTH_O = WIDTH_A + WIDTH_B  // bit-width of outputs
 )(
     input logic [WIDTH_A-1:0] operand_a,
@@ -17,10 +17,12 @@ module gen_prods #(
 
     assign multiplier = {2'b00,operand_b,1'b0};
     assign codes[0] = multiplier[2:0];
+
+    // Generate partial products
     gen_product #(
         .WIDTH(WIDTH_A)
-    ) u0_gen_product(
-        .multiplicand_i(operand_a),
+    ) ua_gen_product(
+        .multiplicand(operand_a),
         .code(codes[0]),
         .partial_prod(temp_prods[0]),
         .sign(signs[0])
@@ -33,12 +35,13 @@ module gen_prods #(
             assign codes[i] = multiplier[2*i+2:2*i];
             gen_product #(
                 .WIDTH(WIDTH_A)
-            ) u_gen_product(
-                .multiplicand_i(operand_a),
+            ) ub_gen_product(
+                .multiplicand(operand_a),
                 .code(codes[i]),
                 .partial_prod(temp_prods[i]),
                 .sign(signs[i])
             );
+            // modified sign extension in booth multipliers
             assign partial_prods[i] = {1'b1,~signs[i],temp_prods[i],1'b0,signs[i-1]} << (2*i-2);
         end
     endgenerate
@@ -46,8 +49,8 @@ module gen_prods #(
     assign codes[COUNT-1] = multiplier[2*COUNT:2*COUNT-2];
     gen_product #(
         .WIDTH(WIDTH_A)
-    ) u2_gen_product(
-        .multiplicand_i(operand_a),
+    ) uc_gen_product(
+        .multiplicand(operand_a),
         .code(codes[COUNT-1]),
         .partial_prod(temp_prods[COUNT-1]),
         .sign(signs[COUNT-1])

@@ -236,7 +236,7 @@ module pdpu_top #(
     // ---------------
     // Sign process and addition of mantissa
     // ---------------
-    localparam int unsigned CARRY_WIDTH = posit_pkg::clog2(N+1);
+    localparam int unsigned CARRY_WIDTH = pdpu_pkg::clog2(N+1);
     localparam int unsigned SUM_WIDTH = ALIGN_WIDTH + CARRY_WIDTH;
 
     logic [N:0][SUM_WIDTH:0] mantissa,mantissa_comp;
