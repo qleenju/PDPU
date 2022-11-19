@@ -99,14 +99,14 @@ module pdpu_top #(
     generate
         genvar j;
         for(j=0;j<N;j++) begin: multiplication
-            pdpu_radix4_booth_mult #(
+            radix4_booth_multiplier #(
                 .WIDTH_A(MANT_WIDTH_I+1),
                 .WIDTH_B(MANT_WIDTH_I+1)
-            ) u_pdpu_radix4_booth_mult(
+            ) u_radix4_booth_multiplier(
                 .operand_a(mants_norm_a[j]),
                 .operand_b(mants_norm_b[j]),
-                .sum(mul_sum[j]),
-                .carry(mul_carry[j])
+                .sum_o(mul_sum[j]),
+                .carry_o(mul_carry[j])
             );
         end
     endgenerate
@@ -150,12 +150,12 @@ module pdpu_top #(
 
     // obtain the maximum exponent by a comparator tree
     logic signed [EXP_WIDTH:0] rg_exp_max;
-    pdpu_comp_tree #(
+    comp_tree #(
         .N(N+1),
         .WIDTH(EXP_WIDTH)
-    ) u_pdpu_comp_tree(
-        .exp_i(rg_exp_items),
-        .exp_o(rg_exp_max)
+    ) u_comp_tree(
+        .operands_i(rg_exp_items),
+        .result_o(rg_exp_max)
     );
 
 
@@ -252,8 +252,8 @@ module pdpu_top #(
     logic [SUM_WIDTH:0] csa_sum,csa_carry;
     csa_tree #(
         .N(N+1),
-        .IN_WIDTH(SUM_WIDTH+1),
-        .OUT_WIDTH(SUM_WIDTH+1)
+        .WIDTH_I(SUM_WIDTH+1),
+        .WIDTH_O(SUM_WIDTH+1)
     ) u_csa_tree(
         .operands_i(mantissa_comp),
         .sum_o(csa_sum),
@@ -275,14 +275,14 @@ module pdpu_top #(
     logic signed [EXP_WIDTH:0] final_rg_exp;
     logic [SUM_WIDTH-1:0] sum_norm;
     // exp_norm的范围：-(ALIGN_WIDTH-2) ~ (carry_bits+1)
-    mant_norm #(
+    mantissa_norm #(
         .WIDTH(SUM_WIDTH),
         .EXP_WIDTH(EXP_WIDTH),
-        .DOT_BITS(CARRY_WIDTH+2)
-    ) u_mant_norm(
+        .DECIMAL_POINT(CARRY_WIDTH+2)
+    ) u_mantissa_norm(
         .operand_i(sum_c),
-        .exp_norm(rg_exp_norm),
-        .operand_o(sum_norm)
+        .exp_adjust(rg_exp_norm),
+        .result_o(sum_norm)
     );
     // 备注：此处存在溢出的可能性
     assign final_rg_exp = rg_exp_max + rg_exp_norm;
@@ -305,12 +305,12 @@ module pdpu_top #(
         assign final_mant = sum_norm << (MANT_WIDTH_O+3-SUM_WIDTH);
     end
 
-    posit_encoder_v2 #(
+    posit_encoder #(
         .n(n_o),
         .es(es_o),
         .EXP_WIDTH(EXP_WIDTH),
         .MANT_WIDTH(MANT_WIDTH_O+2)
-    ) u_posit_encoder_v2(
+    ) u_posit_encoder(
         .sign_i(final_sign),
         .rg_exp_i(final_rg_exp),
         .mant_norm_i(final_mant),
