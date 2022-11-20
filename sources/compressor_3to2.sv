@@ -16,8 +16,8 @@ module compressor_3to2 #(
                 .x(operands_i[0][i]),
                 .y(operands_i[1][i]),
                 .z(operands_i[2][i]),
-                .s(sum[i]),
-                .c(carry[i])
+                .sum(sum[i]),
+                .carry(carry[i])
             );
         end
     endgenerate

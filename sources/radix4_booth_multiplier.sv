@@ -31,8 +31,8 @@ module radix4_booth_multiplier #(
     // ---------------
     csa_tree #(
         .N(COUNT),
-        .IN_WIDTH(WIDTH_O),
-        .OUT_WIDTH(WIDTH_O)
+        .WIDTH_I(WIDTH_O),
+        .WIDTH_O(WIDTH_O)
     ) u_csa_tree(
         .operands_i(partial_prods),
         .sum_o(sum_o),
