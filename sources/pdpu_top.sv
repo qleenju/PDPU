@@ -1,20 +1,18 @@
+/*
+PDPU performs a dot-product of two input vectors "Va" and "Vb" in low-precision format,
+and then accumulate the dot-product result and previous output "out" to a high-precision value "out".
+i.e., acc + Va*Vb --> out
+
+PDPU is configurable from several aspects, i.e., posit formats, dot-product size, and alignment width.
+*/
 module pdpu_top #(
-    // PDPU is configurable from several aspects, i.e., posit formats, dot-product size, and alignment width.
-    // dot-product size: N
-    parameter int unsigned N = 4,
-    // posit format of inputs: posit(n_i,es_i)
-    // n_i: word size, es_i: exponent size
-    parameter int unsigned n_i = 8,
-    parameter int unsigned es_i = 2,
-    // posit format of output: posit(n_o,es_o)
+    parameter int unsigned N = 4,               // dot-product size
+    parameter int unsigned n_i = 8,             // word size
+    parameter int unsigned es_i = 2,            // exponent size
     parameter int unsigned n_o = 16,
     parameter int unsigned es_o = 2,
-    // alignment width: ALIGN_WIDTH
-    parameter int unsigned ALIGN_WIDTH = 14
+    parameter int unsigned ALIGN_WIDTH = 14     // alignment width
 )(
-    // PDPU performs a dot-product of two input vectors "Va" and "Vb" in low-precision format,
-    // and then accumulate the dot-product result and previous output "acc" to a high-precision value "out".
-    // i.e., out <-- acc + Va*Vb
     input logic [N-1:0][n_i-1:0] operands_a,        // input vector (Va)
     input logic [N-1:0][n_i-1:0] operands_b,        // input vector (Vb)
     input logic [n_o-1:0] acc,                      // previous output (acc)
@@ -28,7 +26,7 @@ module pdpu_top #(
     // the maximum mantissa size (not include implicit bit)
     localparam int unsigned MANT_WIDTH_I = n_i-es_i-3;
 
-    // extract valid sign, exponent, and mantissa from input vectors
+    // Extract valid sign, exponent, and mantissa from input vectors
     logic [N-1:0] signs_a, signs_b;
     logic signed [N-1:0][EXP_WIDTH_I:0] rg_exp_a,rg_exp_b;
     logic [N-1:0][MANT_WIDTH_I:0] mants_norm_a, mants_norm_b;
@@ -62,7 +60,7 @@ module pdpu_top #(
     localparam int unsigned EXP_WIDTH_O = pdpu_pkg::clog2(n_o-1) + es_o;
     localparam int unsigned MANT_WIDTH_O = n_o-es_o-3;
 
-    // extract valid sign, exponent, and mantissa from previous output (acc)
+    // Extract valid sign, exponent, and mantissa from previous output (acc)
     logic sign_acc;
     logic signed [EXP_WIDTH_O:0] rg_exp_acc;
     logic [MANT_WIDTH_O:0] mant_norm_acc;
@@ -84,7 +82,7 @@ module pdpu_top #(
     logic [N-1:0] signs_ab;
     logic [N:0] signs;
     
-    // perform XOR to obtain the signs of the product of Va and Vb
+    // Perform XOR to obtain the signs of the product of Va and Vb
     assign signs_ab = signs_a ^ signs_b;
     assign signs = {sign_acc, signs_ab};
 
@@ -111,10 +109,10 @@ module pdpu_top #(
         end
     endgenerate
 
-    // the final addition
     logic [N-1:0][MUL_WIDTH-1:0] mants_norm_c;
     generate
         genvar v;
+        // the final addition
         for(v=0;v<N;v++) begin
             assign mants_norm_c[v] = mul_sum[v] + mul_carry[v];
         end
@@ -148,7 +146,7 @@ module pdpu_top #(
     endgenerate
     assign rg_exp_items[N] = signed'(rg_exp_acc);
 
-    // obtain the maximum exponent by a comparator tree
+    // Obtain the maximum exponent by a recursive comparator tree
     logic signed [EXP_WIDTH:0] rg_exp_max;
     comp_tree #(
         .N(N+1),
@@ -166,9 +164,6 @@ module pdpu_top #(
     logic [N:0][ALIGN_WIDTH-1:0] product_shifted;
 
     // the mantissa products of Va and Vb are kept in values of bitwidth `ALIGN_WIDTH` before alignment
-
-    // depending on the difference between `ALIGN_WIDTH` and `MUL_WIDTH`,
-    // the products will be shifted left or right by a fixed value.
     generate
         genvar k;
         if(ALIGN_WIDTH>MUL_WIDTH) begin: fixed_shift
@@ -190,7 +185,7 @@ module pdpu_top #(
         assign product[N] = mant_norm_acc >> (MANT_WIDTH_O+2-ALIGN_WIDTH);
     end
 
-    // align the products according to the difference between the respective exponent and the maximum exponent
+    // Align the products according to the difference between the respective exponent and the maximum exponent
     localparam int unsigned SHIFT_WIDTH = pdpu_pkg::clog2(ALIGN_WIDTH+1);
     logic [N:0][EXP_WIDTH:0] rg_exp_diff;
     logic [N:0][SHIFT_WIDTH-1:0] shift_amount;
@@ -200,8 +195,7 @@ module pdpu_top #(
         for(z=0;z<N+1;z++) begin
             assign rg_exp_diff[z] = unsigned'(rg_exp_max - rg_exp_items[z]);
         end
-        // the maximum shift amount is ALIGN_WIDTH, 
-        // since the bits exceeding ALIGN_WIDTH will be discarded directly.
+        // the maximum shift amount is ALIGN_WIDTH, since the bits exceeding ALIGN_WIDTH will be discarded directly.
         if(EXP_WIDTH+1>SHIFT_WIDTH) begin
             for(s=0;s<N+1;s++) begin
                 assign shift_amount[s] = (|rg_exp_diff[s][EXP_WIDTH:SHIFT_WIDTH]) ? ALIGN_WIDTH : rg_exp_diff[s][SHIFT_WIDTH-1:0];
@@ -232,15 +226,14 @@ module pdpu_top #(
         end
     endgenerate
 
-
     // ---------------
-    // Sign process and addition of mantissa
+    // Mantissa accumulation in two's complement
     // ---------------
     localparam int unsigned CARRY_WIDTH = pdpu_pkg::clog2(N+1);
     localparam int unsigned SUM_WIDTH = ALIGN_WIDTH + CARRY_WIDTH;
 
     logic [N:0][SUM_WIDTH:0] mantissa,mantissa_comp;
-    //two's complement
+    // Convert to two's complement
     generate
         genvar y;
         for(y=0;y<N+1;y++) begin
@@ -261,17 +254,19 @@ module pdpu_top #(
     );
 
     logic [SUM_WIDTH:0] sum_result;
+    // the final addition
     assign sum_result = csa_sum + csa_carry;
 
     logic final_sign;
     logic [SUM_WIDTH-1:0] sum_c;
+    
     assign final_sign = sum_result[SUM_WIDTH];
     assign sum_c = final_sign ? (~sum_result+1) : sum_result[SUM_WIDTH-1:0];
 
     // ---------------
-    // Normalization
+    // Mantissa normalization and exponent adjustment
     // ---------------
-    logic signed [EXP_WIDTH:0] rg_exp_norm;
+    logic signed [EXP_WIDTH:0] rg_exp_adjust;
     logic signed [EXP_WIDTH:0] final_rg_exp;
     logic [SUM_WIDTH-1:0] sum_norm;
     // exp_norm的范围：-(ALIGN_WIDTH-2) ~ (carry_bits+1)
@@ -281,17 +276,15 @@ module pdpu_top #(
         .DECIMAL_POINT(CARRY_WIDTH+2)
     ) u_mantissa_norm(
         .operand_i(sum_c),
-        .exp_adjust(rg_exp_norm),
+        .exp_adjust(rg_exp_adjust),
         .result_o(sum_norm)
     );
-    // 备注：此处存在溢出的可能性
-    assign final_rg_exp = rg_exp_max + rg_exp_norm;
-
+    // Note: is there any possibility of overflow?
+    assign final_rg_exp = rg_exp_max + rg_exp_adjust;
 
     // ---------------
     // Posit encoder and Rounding
     // ---------------
-    // MANT_WIDTH越大，需要移位的量也越大，所以应尽量减小其位宽
     logic [MANT_WIDTH_O+2:0] final_mant;
     
     if(SUM_WIDTH>MANT_WIDTH_O+3) begin
