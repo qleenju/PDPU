@@ -13,7 +13,7 @@ $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-
 - A configurable PDPU generator is developed to enable PDPU flexibly supporting various posit data types, dot-product sizes, and alignment widths.
 
 #### Architecture
-**The following figure presents the architecture of PDPU equipped with a fine-grained 6-stage pipeline.**
+**The architeture of PDPU equipped with a fined-grained 6-stage pipeline is depicted as follows:**
 
 ![Architecture of the proposed posit dot-product unit](docs/figs/architecture.png)
 
@@ -26,46 +26,49 @@ $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-
 - **S6: Encode.** The posit encoder performs rounding and packs each components of the final result into the posit output $out$.
 
 ## Getting Started
-The PDPU is implemented using SystemVerilog, capable of performing efficient posit-based dot-product operations in deep neural networks.
+**The PDPU is implemented using SystemVerilog, and the module hierarchy is as follows:**
 
 ```
-pdpu_top.sv                   # 顶层模块，参数化的Posit混合精度点积运算
-├── posit_pkg.sv                      # package包，封装常用的函数、变量等
-├── posit_decoder_v2.sv               # posit译码模块
-│   ├── posit_pkg.sv
-│   ├── lzc.sv                        # 前导零计数
-│       └── cf_math_pkg.sv            # lzc模块用到的package库
-│   └── barrel_shifter.sv             # 桶式移位器
-├── mul_booth_wallace.sv              # 尾数相乘模块
-│   ├── gen_prods.sv                  # 基于改进的符号扩展方法生成所有部分积
-│       └── gen_product.sv            # 基于radix-4 Booth编码相应移位、取反等
-│           └── booth_encoder.sv      # Radix-4 Booth编码
-│   └── csa_tree.sv                   # 3:2 CSA和4:2 CSA迭代构成的wallace tree
-│       ├── CSA3to2.sv                # 3:2 CSA模块
-│           └── fulladder.sv          # 全加器单元
-│       └── CSA4to2.sv                # 4:2 CSA模块
-│           └── counter5to3.sv        # 5-3计数器单元
-├── comp_tree.sv                      # 比较器树
-│   └── comparator.sv                 # 比较单元
+pdpu_top.sv                         # top module
+├── pdpu_pkg.sv                     # package, packaging common functions, etc.
+├── posit_decoder.sv                # posit decoder, extracting valid components of posit inputs
+│   ├── pdpu_pkg.sv
+│   ├── lzc.sv                      # leading zero count
+│       └── cf_math_pkg.sv
+│   └── barrel_shifter.sv           # barrel shifter
+├── radix4_booth_multiplier.sv      # modified radix-4 booth wallace multiplier
+│   ├── gen_prods.sv                # generate partial products
+│       └── gen_product.sv          # generate a partial product according to booth encoding result
+│           └── booth_encoder.sv    # radix-4 booth encoder
+│   └── csa_tree.sv                 # recursive carry-save-adder (CSA) tree
+│       ├── compressor_3to2.sv      # 3:2 compressor
+│           └── fulladder.sv        # full adder
+│       └── compressor_4to2.sv      # 4:2 compressor
+│           └── counter_5to3.sv     # 5:3 counter
+├── comp_tree.sv                    # recursive comparator tree
+│   └── comparator.sv               # Comparator between two signed numbers
 ├── barrel_shifter.sv
 ├── csa_tree.sv             
-│   ├── CSA3to2.sv
+│   ├── compressor_3to2.sv
 │       └── fulladder.sv
-│   └── CSA4to2.sv
+│   └── compressor_4to2.sv
 │       └── counter5to3.sv
-├── mant_norm.sv                      # 尾数归一化
+├── mantissa_norm.sv                # mantissa normalization
 │   ├── lzc.sv
 │       └── cf_math_pkg.sv
 │   └── barrel_shifter.sv
-├── posit_encoder_v2.sv               # posit编码单元
-│   └── posit_pkg.sv
-│   └── barrel_shifter.sv
+├── posit_encoder.sv                # posit encoder, packing result components into posit output
+│   └── pdpu_pkg.sv
+└── └── barrel_shifter.sv
 ```
 
+**Benefiting from the highly parameterized sub-modules, PDPU can be configured from several aspects, i.e., posit formats, dot-product size, and alignment width.**
+- **Supporting custom posit formats:** PDPU supports any combination of word size ($n$) and exponent size ($es$) both for inputs and outputs. This also enables mixed-precision stragety, since the proposed decoder and encoder are capable of extracting and packing data of any posit format, respectively.
+- **Supporting diverse dot-product size:**  PDPU is capable of supporting diverse dot-product size ($N$) rather than a specific size, which makes it more scalable for various hardware constraints. To accommodate the variable size, several sub-modules of PDPU are instantiated in parallel, while some others are recursively generated in a tree structure, e.g., comparator tree and carry-save-adder (CSA) tree.
+- **Supporting suitable alignment width:** PDPU parameterizes the width ($W_m$) of aligned mantissa, which can be determined based on distribution characteristics of inputs and DNN accuracy requirements. Configured with suitable alignment width, PDPU minimizes the hardware cost while meeting precision, since the bits exceeding $W_m$ wil be discarded directly.
 
 ## Publication
 if you use PDPU in your work, you can cite us:
 ```
 
 ```
-
