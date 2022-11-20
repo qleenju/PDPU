@@ -29,7 +29,9 @@ $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-
 **PDPU基于SystemVerilog实现，其模块层次结构如下所示：**
 
 ```
-pdpu_top.sv                         # 顶层模块
+pdpu_top.sv                         # 顶层模块，纯组合实现
+pdpu_top_pipelined.sv               # 嵌有细粒度6级流水线的PDPU
+├── registers.svh                   # 寄存器头文件
 ├── pdpu_pkg.sv                     # package库，封装常用的函数等
 ├── posit_decoder.sv                # posit译码模块，提取输入posit数据的符号、指数及尾数值
 │   ├── pdpu_pkg.sv

@@ -29,7 +29,9 @@ $$out = acc+V_a\times V_b = acc+a_0\cdot b_0+a_1\cdot b_1+...+a_{N-1}\cdot b_{N-
 **The PDPU is implemented using SystemVerilog, and the module hierarchy is as follows:**
 
 ```
-pdpu_top.sv                         # top module
+pdpu_top.sv                         # top module, combinationally implemented
+pdpu_top_pipelined.sv               # PDPU equipped with a fine-grained 6-stage pipeline
+├── registers.svh                   # register header file
 ├── pdpu_pkg.sv                     # package, packaging common functions, etc.
 ├── posit_decoder.sv                # posit decoder, extracting valid components of posit inputs
 │   ├── pdpu_pkg.sv
