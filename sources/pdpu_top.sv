@@ -6,12 +6,12 @@ i.e., acc + Va*Vb --> out
 PDPU is configurable from several aspects, i.e., posit formats, dot-product size, and alignment width.
 */
 module pdpu_top #(
-    parameter int unsigned N = 4,               // dot-product size
-    parameter int unsigned n_i = 8,             // word size
-    parameter int unsigned es_i = 2,            // exponent size
+    parameter int unsigned N = 4,                   // dot-product size
+    parameter int unsigned n_i = 8,                 // word size
+    parameter int unsigned es_i = 2,                // exponent size
     parameter int unsigned n_o = 16,
     parameter int unsigned es_o = 2,
-    parameter int unsigned ALIGN_WIDTH = 14     // alignment width
+    parameter int unsigned ALIGN_WIDTH = 14         // alignment width
 )(
     input logic [N-1:0][n_i-1:0] operands_a,        // input vector (Va)
     input logic [N-1:0][n_i-1:0] operands_b,        // input vector (Vb)
@@ -75,7 +75,6 @@ module pdpu_top #(
         .mant_norm_o(mant_norm_acc)
     );
 
-
     // ---------------
     // Sign Process
     // ---------------
@@ -86,6 +85,19 @@ module pdpu_top #(
     assign signs_ab = signs_a ^ signs_b;
     assign signs = {sign_acc, signs_ab};
 
+    // ---------------
+    // Exponent Addition
+    // ---------------
+    localparam int unsigned EXP_WIDTH = pdpu_pkg::maximum(EXP_WIDTH_I+1,EXP_WIDTH_O);
+    
+    // obtain the exponents of the product of Va and Vb through signed addition
+    logic signed [N-1:0][EXP_WIDTH:0] rg_exp_c;
+    generate
+        genvar m;
+        for(m=0;m<N;m++) begin
+            assign rg_exp_c[m] = signed'(rg_exp_a[m]) + signed'(rg_exp_b[m]);
+        end
+    endgenerate
 
     // ---------------
     // Mantissa Multiplication
@@ -109,31 +121,6 @@ module pdpu_top #(
         end
     endgenerate
 
-    logic [N-1:0][MUL_WIDTH-1:0] mants_norm_c;
-    generate
-        genvar v;
-        // the final addition
-        for(v=0;v<N;v++) begin
-            assign mants_norm_c[v] = mul_sum[v] + mul_carry[v];
-        end
-    endgenerate
-
-
-    // ---------------
-    // Exponent Addition
-    // ---------------
-    localparam int unsigned EXP_WIDTH = pdpu_pkg::maximum(EXP_WIDTH_I+1,EXP_WIDTH_O);
-    
-    // obtain the exponents of the product of Va and Vb through signed addition
-    logic signed [N-1:0][EXP_WIDTH:0] rg_exp_c;
-    generate
-        genvar m;
-        for(m=0;m<N;m++) begin
-            assign rg_exp_c[m] = signed'(rg_exp_a[m]) + signed'(rg_exp_b[m]);
-        end
-    endgenerate
-
-
     // ---------------
     // Exponent Compare
     // ---------------
@@ -155,6 +142,17 @@ module pdpu_top #(
         .operands_i(rg_exp_items),
         .result_o(rg_exp_max)
     );
+
+    // ---------------
+    // The final addition
+    // ---------------
+    logic [N-1:0][MUL_WIDTH-1:0] mants_norm_c;
+    generate
+        genvar v;
+        for(v=0;v<N;v++) begin
+            assign mants_norm_c[v] = mul_sum[v] + mul_carry[v];
+        end
+    endgenerate
 
 
     // ---------------
@@ -269,7 +267,7 @@ module pdpu_top #(
     logic signed [EXP_WIDTH:0] rg_exp_adjust;
     logic signed [EXP_WIDTH:0] final_rg_exp;
     logic [SUM_WIDTH-1:0] sum_norm;
-    // exp_norm的范围：-(ALIGN_WIDTH-2) ~ (carry_bits+1)
+
     mantissa_norm #(
         .WIDTH(SUM_WIDTH),
         .EXP_WIDTH(EXP_WIDTH),
