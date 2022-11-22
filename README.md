@@ -65,9 +65,9 @@ pdpu_top_pipelined.sv               # PDPU equipped with a fine-grained 6-stage 
 ```
 
 **Benefiting from the highly parameterized sub-modules, PDPU can be configured from several aspects, i.e., posit formats, dot-product size, and alignment width.**
-- **Supporting custom posit formats:** PDPU supports any combination of word size ($n$) and exponent size ($es$) both for inputs and outputs. This also enables mixed-precision stragety, since the proposed decoder and encoder are capable of extracting and packing data of any posit format, respectively.
-- **Supporting diverse dot-product size:**  PDPU is capable of supporting diverse dot-product size ($N$) rather than a specific size, which makes it more scalable for various hardware constraints. To accommodate the variable size, several sub-modules of PDPU are instantiated in parallel, while some others are recursively generated in a tree structure, e.g., comparator tree and carry-save-adder (CSA) tree.
-- **Supporting suitable alignment width:** PDPU parameterizes the width ($W_m$) of aligned mantissa, which can be determined based on distribution characteristics of inputs and DNN accuracy requirements. Configured with suitable alignment width, PDPU minimizes the hardware cost while meeting precision, since the bits exceeding $W_m$ wil be discarded directly.
+- **Supporting custom posit formats:** PDPU supports any combination of word size $n$ and exponent size $es$ both for inputs and outputs. This also enables mixed-precision stragety, since the proposed decoder and encoder are capable of extracting and packing data of any posit format, respectively.
+- **Supporting diverse dot-product size:**  PDPU is capable of supporting diverse dot-product size $N$ rather than a specific size, which makes it more scalable for various hardware constraints. To accommodate the variable size, several sub-modules of PDPU are instantiated in parallel, while some others are recursively generated in a tree structure, e.g., comparator tree and carry-save-adder (CSA) tree.
+- **Supporting suitable alignment width:** PDPU parameterizes the width $W_m$ of aligned mantissa, which can be determined based on distribution characteristics of inputs and DNN accuracy requirements. Configured with suitable alignment width, PDPU minimizes the hardware cost while meeting precision, since the bits exceeding $W_m$ wil be discarded directly.
 
 ## Publication
 if you use PDPU in your work, you can cite us:
