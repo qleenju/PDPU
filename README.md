@@ -1,6 +1,8 @@
 # PDPU
 **An Open-Source Posit Dot-Product Unit (PDPU) for Deep Learning Applications**
 
+Author: Qiong Li, Chao Fang, and Zhongfeng Wang @ Nanjing University
+
 English | [简体中文](https://github.com/qleenju/PDPU/blob/main/docs/README_ZH.md)
 
 ## Overview
@@ -70,7 +72,13 @@ pdpu_top_pipelined.sv               # PDPU equipped with a fine-grained 6-stage 
 - **Supporting suitable alignment width:** PDPU parameterizes the width $W_m$ of aligned mantissa, which can be determined based on distribution characteristics of inputs and DNN accuracy requirements. Configured with suitable alignment width, PDPU minimizes the hardware cost while meeting precision, since the bits exceeding $W_m$ wil be discarded directly.
 
 ## Publication
-if you use PDPU in your work, you can cite us:
+If you find PDPU helpful in your work, please cite us:
 ```
-
+@inproceedings{li2023pdpu,
+  title={PDPU: An Open-Source Posit Dot-Product Unit for Deep Learning Applications},
+  author={Li, Qiong and Fang, Chao and Wang, Zhongfeng},
+  booktitle={2023 IEEE International Symposium on Circuits and Systems (ISCAS)},
+  year={2023},
+  organization={IEEE}
+}
 ```

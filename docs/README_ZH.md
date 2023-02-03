@@ -70,8 +70,13 @@ pdpu_top_pipelined.sv               # 嵌有细粒度6级流水线的PDPU
 - **支持合适的对齐位宽：** PDPU参数化了尾数对齐的位宽 $W_m$，该宽度可根据输入数据的分布特征和神经网络的精度要求确定。当配置合适的对齐位宽，PDPU能最小化硬件开销，同时保持结果精度，因为对齐过程中移出该位宽的比特将被直接舍弃。
 
 ## 引用
-如果您用到了PDPU，请引用我们的工作：
-
+如果您认为 PDPU 对您的工作有帮助，请引用我们：
 ```
-
+@inproceedings{li2023pdpu,
+  title={PDPU: An Open-Source Posit Dot-Product Unit for Deep Learning Applications},
+  author={Li, Qiong and Fang, Chao and Wang, Zhongfeng},
+  booktitle={2023 IEEE International Symposium on Circuits and Systems (ISCAS)},
+  year={2023},
+  organization={IEEE}
+}
 ```
