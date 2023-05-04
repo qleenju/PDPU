@@ -1,7 +1,11 @@
 # PDPU
 **一种针对深度学习应用的开源Posit点积运算单元**
 
-[English](https://github.com/qleenju/PDPU/blob/main/README.md) | 简体中文
+ISCAS 2023 [ [Paper](https://arxiv.org/abs/2302.01876) | [Slide](docs/PDPU_ISCAS_2023_Slides.pdf) ]
+
+作者：李琼，方超，王中风 @ 南京大学
+
+[ [English](https://github.com/qleenju/PDPU/blob/main/README.md) | 简体中文 ]
 
 ## 总览
 PDPU在低精度格式下执行向量 $V_a$ 和 $V_b$ 的点积运算，再将点积结果与已有值 $acc$ 累加到更高精度的输出值 $out$，如下式所示：

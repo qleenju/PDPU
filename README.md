@@ -1,9 +1,11 @@
 # PDPU
 **An Open-Source Posit Dot-Product Unit (PDPU) for Deep Learning Applications**
 
-Author: Qiong Li, Chao Fang, and Zhongfeng Wang @ Nanjing University
+ISCAS 2023 [ [Paper](https://arxiv.org/abs/2302.01876) | [Slide](docs/PDPU_ISCAS_2023_Slides.pdf) ]
 
-English | [简体中文](https://github.com/qleenju/PDPU/blob/main/docs/README_ZH.md)
+Authors: Qiong Li, Chao Fang, and Zhongfeng Wang @ Nanjing University
+
+[ English | [简体中文](https://github.com/qleenju/PDPU/blob/main/docs/README_ZH.md) ]
 
 ## Overview
 The proposed PDPU performs a dot-product of two input vectors $V_a$ and $V_b$ in low-precision format, and then accumulates the dot-product result and previous output $acc$ to a high-precision value $out$ as shown below:
@@ -66,7 +68,7 @@ pdpu_top_pipelined.sv               # PDPU equipped with a fine-grained 6-stage 
 └── └── barrel_shifter.sv
 ```
 
-**Benefiting from the highly parameterized sub-modules, PDPU can be configured from several aspects, i.e., posit formats, dot-product size, and alignment width.**
+**Benefitting from the highly parameterized sub-modules, PDPU can be configured from several aspects, i.e., posit formats, dot-product size, and alignment width.**
 - **Supporting custom posit formats:** PDPU supports any combination of word size $n$ and exponent size $es$ both for inputs and outputs. This also enables mixed-precision stragety, since the proposed decoder and encoder are capable of extracting and packing data of any posit format, respectively.
 - **Supporting diverse dot-product size:**  PDPU is capable of supporting diverse dot-product size $N$ rather than a specific size, which makes it more scalable for various hardware constraints. To accommodate the variable size, several sub-modules of PDPU are instantiated in parallel, while some others are recursively generated in a tree structure, e.g., comparator tree and carry-save-adder (CSA) tree.
 - **Supporting suitable alignment width:** PDPU parameterizes the width $W_m$ of aligned mantissa, which can be determined based on distribution characteristics of inputs and DNN accuracy requirements. Configured with suitable alignment width, PDPU minimizes the hardware cost while meeting precision, since the bits exceeding $W_m$ wil be discarded directly.
